@@ -1,8 +1,10 @@
-Ahnentafel 📜
+# Ahnentafel 
 
 Eine mobile-first PWA zum Durchsuchen von GEDCOM-Ahnenforschungsdateien.
 
-Features
+<img src="icon-192.png" width="96" alt="LIFT Icon">
+
+Features 📜
 
 GEDCOM-Datei laden (.ged / .gedcom) – direkt im Browser, keine Server nötig
 Suche nach Name, Ort und Datum
