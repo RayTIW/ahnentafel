@@ -48,7 +48,6 @@ header {
 }
 .app-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
 .app-title span { color: var(--sepia); font-style: italic; font-weight: 400; }
-/* Tab Bar */
 .tab-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
   height: calc(var(--tab-h) + var(--safe-bottom));
@@ -70,9 +69,25 @@ header {
 .tab-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.5; }
 .tab-btn.active svg { stroke-width: 2; }
 
+/* Loading screen */
+#view-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: calc(100dvh - 60px - var(--tab-h) - var(--safe-bottom));
+  gap: 16px;
+}
+.loading-spinner {
+  width: 36px; height: 36px;
+  border: 2.5px solid var(--sepia-pale);
+  border-top-color: var(--sepia);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: var(--ink-soft); }
+
 /* Upload */
 #view-upload {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
   min-height: calc(100dvh - 60px - var(--tab-h) - var(--safe-bottom));
   padding: 2rem 1.5rem 2rem;
 }
@@ -87,6 +102,51 @@ header {
 .hint { margin-top: 1.5rem; font-size: 13px; color: var(--sepia); text-align: center; line-height: 1.6; max-width: 300px; }
 .hint code { background: var(--sepia-faint); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 #file-input { display: none; }
+
+/* Modal */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(26,18,9,0.5);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  align-items: flex-end; justify-content: center;
+  padding-bottom: calc(var(--safe-bottom) + 16px);
+}
+.modal-backdrop.open { display: flex; }
+.modal-sheet {
+  background: var(--parchment);
+  border-radius: 20px 20px 16px 16px;
+  padding: 24px 20px 20px;
+  width: 100%; max-width: 440px;
+  box-shadow: 0 -4px 32px var(--shadow);
+}
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 0 auto 20px;
+}
+.modal-icon { font-size: 40px; text-align: center; margin-bottom: 12px; }
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; font-weight: 600; color: var(--ink);
+  text-align: center; margin-bottom: 8px; letter-spacing: -0.02em;
+}
+.modal-body {
+  font-size: 14px; color: var(--ink-soft); text-align: center;
+  line-height: 1.6; margin-bottom: 20px;
+}
+.modal-body strong { color: var(--ink); font-weight: 500; }
+.modal-actions { display: flex; flex-direction: column; gap: 10px; }
+.modal-btn {
+  width: 100%; padding: 14px;
+  border-radius: 12px; border: none; cursor: pointer;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 15px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.modal-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.modal-btn-primary { background: var(--sepia); color: #fff; }
+.modal-btn-primary:active { opacity: 0.85; }
+.modal-btn-secondary { background: var(--sepia-faint); color: var(--ink-soft); border: 0.5px solid var(--border); }
+.modal-btn-secondary:active { background: var(--sepia-pale); }
 
 /* Stats */
 .stats-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
@@ -149,7 +209,7 @@ select { width: 130px; flex-shrink: 0; }
 .no-relations { padding: 12px 15px; font-size: 14px; color: var(--sepia-light); font-style: italic; }
 .ornament { text-align: center; color: var(--sepia-light); font-family: 'Playfair Display', serif; font-size: 18px; letter-spacing: 8px; padding: 8px 0; opacity: 0.5; }
 
-/* Erweitert-Modus */
+/* Erweitert */
 .raw-block { margin: 0 16px 12px; background: #fff; border: 0.5px solid var(--border); border-radius: 12px; overflow: hidden; }
 .raw-block-title { padding: 10px 15px 8px; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sepia); border-bottom: 0.5px solid var(--border); background: var(--sepia-faint); }
 .raw-entry { padding: 9px 15px; border-bottom: 0.5px solid rgba(139,105,20,0.10); display: flex; gap: 10px; align-items: flex-start; }
@@ -179,26 +239,9 @@ select { width: 130px; flex-shrink: 0; }
 .new-file-btn-full { width: 100%; padding: 13px 16px; background: #fff; border: 0.5px solid var(--border); border-radius: 12px; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 15px; color: var(--ink-soft); display: flex; align-items: center; justify-content: center; gap: 8px; }
 .new-file-btn-full:active { background: var(--sepia-faint); }
 .new-file-btn-full svg { width: 18px; height: 18px; stroke: var(--sepia-light); fill: none; stroke-width: 1.5; }
-
-/* QR Code */
-.qr-card {
-  background: #fff; border: 0.5px solid var(--border);
-  border-radius: 12px; padding: 20px 16px;
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
-}
-.qr-canvas-wrap {
-  background: #fff; border-radius: 10px;
-  padding: 12px; border: 0.5px solid var(--border);
-  display: inline-block;
-}
-#qr-canvas { display: block; image-rendering: pixelated; width: 180px; height: 180px; }
-.qr-url {
-  font-size: 11px; color: var(--sepia); text-align: center;
-  word-break: break-all; line-height: 1.5; max-width: 240px;
-}
-.qr-label {
-  font-size: 13px; color: var(--ink-soft); text-align: center; line-height: 1.5;
-}
+.danger-btn { width: 100%; padding: 13px 16px; background: #fff; border: 0.5px solid rgba(180,40,40,0.3); border-radius: 12px; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 15px; color: #b42828; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.danger-btn:active { background: #fff0f0; }
+.danger-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.5; }
 </style>
 </head>
 <body>
@@ -206,6 +249,12 @@ select { width: 130px; flex-shrink: 0; }
 <header>
   <div class="app-title">Ahnen<span>tafel</span></div>
 </header>
+
+<!-- Ladebildschirm -->
+<div id="view-loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Wird geladen …</div>
+</div>
 
 <!-- Upload -->
 <div id="view-upload">
@@ -276,7 +325,6 @@ select { width: 130px; flex-shrink: 0; }
       </div>
     </div>
   </div>
-
   <div class="settings-section">
     <div class="settings-section-title">Datei</div>
     <div class="settings-card">
@@ -286,26 +334,24 @@ select { width: 130px; flex-shrink: 0; }
           <div class="settings-row-sub" id="file-name-label">–</div>
         </div>
       </div>
+      <div class="settings-row" id="storage-row">
+        <div>
+          <div class="settings-row-label">Lokal gespeichert</div>
+          <div class="settings-row-sub" id="storage-label">–</div>
+        </div>
+      </div>
     </div>
-    <div style="margin-top:10px;">
-      <button class="new-file-btn-full" onclick="resetApp()">
+    <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">
+      <button class="new-file-btn-full" onclick="document.getElementById('file-input').click()">
         <svg viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12"/></svg>
         Neue Datei laden
       </button>
+      <button class="danger-btn" id="delete-btn" onclick="deleteStoredFile()" style="display:none;">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Gespeicherte Datei löschen
+      </button>
     </div>
   </div>
-
-  <div class="settings-section">
-    <div class="settings-section-title">App herunterladen</div>
-    <div class="qr-card">
-      <p class="qr-label">QR-Code scannen, um die App auf einem anderen Gerät zu öffnen</p>
-      <div class="qr-canvas-wrap">
-        <canvas id="qr-canvas" width="180" height="180"></canvas>
-      </div>
-      <div class="qr-url">https://raytiw.github.io/ahnentafel/</div>
-    </div>
-  </div>
-
   <div class="settings-section">
     <div class="settings-section-title">App</div>
     <div class="settings-card">
@@ -313,6 +359,28 @@ select { width: 130px; flex-shrink: 0; }
         <div class="settings-row-label">Version</div>
         <div class="settings-row-sub" id="version-label" style="font-size:14px;color:var(--ink);"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Speichern-Modal -->
+<div class="modal-backdrop" id="save-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-icon">💾</div>
+    <div class="modal-title">Datei lokal speichern?</div>
+    <div class="modal-body">
+      <strong id="modal-file-name"></strong> kann in der App gespeichert werden —
+      dann öffnet sie sich beim nächsten Start automatisch, ohne erneutes Laden.
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-primary" onclick="saveToIndexedDB()">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Ja, speichern
+      </button>
+      <button class="modal-btn modal-btn-secondary" onclick="closeSaveModal()">
+        Nein, nur einmal laden
+      </button>
     </div>
   </div>
 </div>
@@ -332,81 +400,137 @@ select { width: 130px; flex-shrink: 0; }
 <script>
 'use strict';
 
-const APP_VERSION = '1.0.1';
-const APP_URL = 'https://raytiw.github.io/ahnentafel/';
+// ── Konstanten ──
+const APP_VERSION = '1.0.2';
+const DB_NAME     = 'ahnentafel';
+const DB_VERSION  = 1;
+const STORE       = 'gedcom';
 
-let db = { persons: {}, families: {} };
-let appMode = localStorage.getItem('ahnen-mode') || 'normal';
-let currentTab = 'search';
+// ── Globaler Zustand ──
+let db             = { persons: {}, families: {} };
+let appMode        = localStorage.getItem('ahnen-mode') || 'normal';
+let currentTab     = 'search';
+let idb            = null;   // IndexedDB-Instanz
+let pendingFileText = '';    // Zwischenspeicher vor Speichern-Entscheidung
+let pendingFileName = '';
 
-// ── QR-Code Generator (keine externe Bibliothek) ──
-// Micro-QR für kurze URLs – vollständige Implementierung für URL-Typ
-function drawQR(canvas, text) {
-  // Wir nutzen die QR API via Google Charts als sicheren Fallback —
-  // aber alles clientseitig per Canvas + eigenem Mini-Encoder
-  // Für Produktions-Einsatz: qrcodejs via CDN
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  const encoded = encodeURIComponent(text);
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encoded}&bgcolor=ffffff&color=1a1209&margin=0&format=png`;
-  img.onload = () => {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  };
-  img.onerror = () => {
-    // Fallback: einfacher Text-Hinweis wenn offline
-    drawQRFallback(canvas, text);
-  };
+// ── IndexedDB-Hilfsfunktionen ──
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(STORE);
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = ()  => reject(req.error);
+  });
 }
 
-function drawQRFallback(canvas, text) {
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  ctx.fillStyle = '#f0e8cc';
-  ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = '#8b6914';
-  ctx.font = '13px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('QR-Code nicht', w/2, h/2 - 10);
-  ctx.fillText('verfügbar (offline)', w/2, h/2 + 10);
+function idbGet(key) {
+  return new Promise((resolve, reject) => {
+    const tx  = idb.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = ()  => reject(req.error);
+  });
 }
 
-// ── Parser ──
+function idbSet(key, value) {
+  return new Promise((resolve, reject) => {
+    const tx  = idb.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror   = ()  => reject(req.error);
+  });
+}
+
+function idbDelete(key) {
+  return new Promise((resolve, reject) => {
+    const tx  = idb.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror   = ()  => reject(req.error);
+  });
+}
+
+// ── GEDCOM-Parser ──
+
 function parseGedcom(text) {
   db = { persons: {}, families: {} };
   const lines = text.split(/\r?\n/);
-  let cur = null, curTag = null, rawStack = [];
+  let cur      = null;
+  let curTag   = null;
+  let rawStack = [];
+
   for (const raw of lines) {
     const m = raw.match(/^(\d+)\s+(\S+)\s*(.*)?$/);
     if (!m) continue;
-    const level = parseInt(m[1]), tag = m[2], val = (m[3] || '').trim();
+
+    const level = parseInt(m[1]);
+    const tag   = m[2];
+    const val   = (m[3] || '').trim();
+
+    // Neuer Datensatz auf Ebene 0
     if (level === 0) {
       if (tag.startsWith('@') && val === 'INDI') {
-        cur = { id: tag, name: '', given: '', surname: '', sex: 'U', birt: {}, deat: {}, fams: [], famc: [], _raw: [] };
-        db.persons[tag] = cur; curTag = 'INDI'; rawStack = [];
+        cur = {
+          id: tag, name: '', given: '', surname: '',
+          sex: 'U', birt: {}, deat: {},
+          fams: [], famc: [], _raw: []
+        };
+        db.persons[tag] = cur;
+        curTag   = 'INDI';
+        rawStack = [];
       } else if (tag.startsWith('@') && val === 'FAM') {
         cur = { id: tag, husb: null, wife: null, chil: [], marr: {} };
-        db.families[tag] = cur; curTag = 'FAM'; rawStack = [];
-      } else { cur = null; curTag = null; rawStack = []; }
+        db.families[tag] = cur;
+        curTag   = 'FAM';
+        rawStack = [];
+      } else {
+        cur      = null;
+        curTag   = null;
+        rawStack = [];
+      }
       continue;
     }
+
     if (!cur) continue;
+
+    // ── Person (INDI) ──
     if (curTag === 'INDI') {
       if (level === 1 && tag === 'NAME') {
         cur.name = val.replace(/\//g, ' ').replace(/\s+/g, ' ').trim() || '(unbekannt)';
         const parts = val.split('/');
-        cur.given = (parts[0] || '').trim();
+        cur.given   = (parts[0] || '').trim();
         cur.surname = (parts[1] || '').trim();
       }
-      if (level === 1 && tag === 'SEX') cur.sex = val || 'U';
-      if (level === 1) cur._evt = (tag === 'BIRT' || tag === 'DEAT' || tag === 'MARR') ? tag.toLowerCase() : null;
-      if (level === 2 && tag === 'DATE' && cur._evt) { if (!cur[cur._evt]) cur[cur._evt] = {}; cur[cur._evt].date = val; }
-      if (level === 2 && tag === 'PLAC' && cur._evt) { if (!cur[cur._evt]) cur[cur._evt] = {}; cur[cur._evt].plac = val; }
+
+      if (level === 1 && tag === 'SEX') {
+        cur.sex = val || 'U';
+      }
+
+      // Aktives Ereignis merken (BIRT/DEAT/MARR), alle anderen Tags setzen es zurück
+      if (level === 1) {
+        cur._evt = (tag === 'BIRT' || tag === 'DEAT' || tag === 'MARR')
+          ? tag.toLowerCase()
+          : null;
+      }
+
+      if (level === 2 && tag === 'DATE' && cur._evt) {
+        if (!cur[cur._evt]) cur[cur._evt] = {};
+        cur[cur._evt].date = val;
+      }
+
+      if (level === 2 && tag === 'PLAC' && cur._evt) {
+        if (!cur[cur._evt]) cur[cur._evt] = {};
+        cur[cur._evt].plac = val;
+      }
+
       if (level === 1 && tag === 'FAMS') cur.fams.push(val);
       if (level === 1 && tag === 'FAMC') cur.famc.push(val);
 
-      // Rohdaten
+      // Rohdaten für Erweitert-Modus
       if (level === 1) {
         const entry = { tag, val, children: [] };
         rawStack = [entry];
@@ -419,33 +543,163 @@ function parseGedcom(text) {
         rawStack[1].children.push({ tag, val, children: [] });
       }
     }
+
+    // ── Familie (FAM) ──
     if (curTag === 'FAM') {
       if (level === 1 && tag === 'HUSB') cur.husb = val;
       if (level === 1 && tag === 'WIFE') cur.wife = val;
       if (level === 1 && tag === 'CHIL') cur.chil.push(val);
       if (level === 1 && tag === 'MARR') cur._evt = 'marr';
-      if (level === 2 && tag === 'DATE' && cur._evt) { if (!cur[cur._evt]) cur[cur._evt] = {}; cur[cur._evt].date = val; }
-      if (level === 2 && tag === 'PLAC' && cur._evt) { if (!cur[cur._evt]) cur[cur._evt] = {}; cur[cur._evt].plac = val; }
+
+      if (level === 2 && tag === 'DATE' && cur._evt) {
+        if (!cur[cur._evt]) cur[cur._evt] = {};
+        cur[cur._evt].date = val;
+      }
+
+      if (level === 2 && tag === 'PLAC' && cur._evt) {
+        if (!cur[cur._evt]) cur[cur._evt] = {};
+        cur[cur._evt].plac = val;
+      }
     }
   }
-  for (const p of Object.values(db.persons)) { if (!p.name) p.name = '(unbekannt)'; }
+
+  // Fallback für Personen ohne Namen
+  for (const p of Object.values(db.persons)) {
+    if (!p.name) p.name = '(unbekannt)';
+  }
 }
 
-// ── Formatierung ──
-function fmtDate(d) { return d && d.date ? d.date : ''; }
+// ── UI: Datei geladen anzeigen ──
+
+function showLoaded(fileName, storedSize) {
+  const total    = Object.keys(db.persons).length;
+  const fams     = Object.keys(db.families).length;
+  const withBirt = Object.values(db.persons).filter(p => p.birt && p.birt.date).length;
+
+  document.getElementById('stats-bar').innerHTML = [
+    `<div class="stat-pill"><strong>${total.toLocaleString('de')}</strong> Personen</div>`,
+    `<div class="stat-pill"><strong>${fams.toLocaleString('de')}</strong> Familien</div>`,
+    `<div class="stat-pill"><strong>${withBirt.toLocaleString('de')}</strong> mit Geburtsdatum</div>`,
+    `<div class="stat-pill">${esc(fileName)}</div>`
+  ].join('');
+
+  document.getElementById('file-name-label').textContent = fileName;
+
+  if (storedSize) {
+    const mb = (storedSize / 1024 / 1024).toFixed(1);
+    document.getElementById('storage-label').textContent = `Ja · ${mb} MB`;
+    document.getElementById('delete-btn').style.display  = 'flex';
+  } else {
+    document.getElementById('storage-label').textContent = 'Nein';
+    document.getElementById('delete-btn').style.display  = 'none';
+  }
+
+  document.getElementById('view-loading').style.display = 'none';
+  document.getElementById('view-upload').style.display  = 'none';
+  document.getElementById('view-main').style.display    = 'block';
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-search').classList.add('active');
+
+  doSearch();
+}
+
+// ── Datei vom Nutzer laden ──
+
+function loadFile(file) {
+  document.getElementById('view-upload').style.display  = 'none';
+  document.getElementById('view-loading').style.display = 'flex';
+  document.getElementById('loading-text').textContent   = 'Datei wird gelesen …';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    document.getElementById('loading-text').textContent = 'Wird verarbeitet …';
+
+    // Kurze Pause damit der Browser das UI updaten kann
+    setTimeout(() => {
+      parseGedcom(text);
+      pendingFileText = text;
+      pendingFileName = file.name;
+
+      document.getElementById('modal-file-name').textContent = file.name;
+      document.getElementById('view-loading').style.display  = 'none';
+      showLoaded(file.name, 0);
+      document.getElementById('save-modal').classList.add('open');
+    }, 50);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ── Datei in IndexedDB speichern ──
+
+async function saveToIndexedDB() {
+  // Modal schließen OHNE pendingFileText zu löschen
+  document.getElementById('save-modal').classList.remove('open');
+  document.getElementById('loading-text').textContent   = 'Wird gespeichert …';
+  document.getElementById('view-main').style.display    = 'none';
+  document.getElementById('view-loading').style.display = 'flex';
+
+  try {
+    await idbSet('text', pendingFileText);
+    await idbSet('name', pendingFileName);
+    const size = new Blob([pendingFileText]).size;
+    await idbSet('size', size);
+    showLoaded(pendingFileName, size);
+  } catch (err) {
+    console.error('Speichern fehlgeschlagen:', err);
+    showLoaded(pendingFileName, 0);
+  }
+
+  pendingFileText = '';
+  pendingFileName = '';
+}
+
+function closeSaveModal() {
+  document.getElementById('save-modal').classList.remove('open');
+  pendingFileText = '';
+  pendingFileName = '';
+}
+
+// ── Gespeicherte Datei löschen ──
+
+async function deleteStoredFile() {
+  try {
+    await idbDelete('text');
+    await idbDelete('name');
+    await idbDelete('size');
+  } catch (e) {
+    // Fehler ignorieren
+  }
+  document.getElementById('storage-label').textContent = 'Nein';
+  document.getElementById('delete-btn').style.display  = 'none';
+}
+
+// ── Formatierungsfunktionen ──
+
+function fmtDate(d) {
+  return d && d.date ? d.date : '';
+}
+
 function fmtPlace(d, full) {
   if (!d || !d.plac) return '';
+
   const parts = d.plac.split(',');
-  const ort = (parts[0] || '').trim(), kreis = (parts[1] || '').trim(),
-        land = (parts[2] || '').trim(), staat = (parts[3] || '').trim();
+  const ort   = (parts[0] || '').trim();
+  const kreis = (parts[1] || '').trim();
+  const land  = (parts[2] || '').trim();
+  const staat = (parts[3] || '').trim();
+
   if (full) {
     const p = [ort, kreis, land].filter(Boolean);
     if (staat && staat !== 'Deutschland') p.push(staat);
     return p.join(', ') || d.plac;
   }
+
   if (ort && staat && staat !== 'Deutschland') return ort + ', ' + staat;
   return ort || d.plac;
 }
+
 function fmtEvent(d) {
   if (!d) return '';
   const parts = [];
@@ -454,289 +708,421 @@ function fmtEvent(d) {
   if (plac) parts.push(plac);
   return parts.join(' · ');
 }
+
 function initials(p) {
-  const g = (p.given || '').trim(), s = (p.surname || '').trim();
+  const g = (p.given   || '').trim();
+  const s = (p.surname || '').trim();
   if (g && s) return (g[0] + s[0]).toUpperCase();
   return (g || s || '?')[0].toUpperCase();
 }
+
 function shortMeta(p) {
-  const b = fmtEvent(p.birt), d = fmtEvent(p.deat);
-  return [b ? '* '+b : '', d ? '† '+d : ''].filter(Boolean).join('  ');
+  const b = fmtEvent(p.birt);
+  const d = fmtEvent(p.deat);
+  return [b ? '* ' + b : '', d ? '† ' + d : ''].filter(Boolean).join(' ');
 }
 
-// Tag-Übersetzungen
+// GEDCOM-Tag-Übersetzungen (Deutsch)
 const TAG_DE = {
-  NAME:'Name', SEX:'Geschlecht', BIRT:'Geburt', DEAT:'Tod', MARR:'Heirat',
-  BURI:'Beerdigung', BAPM:'Taufe', CHR:'Taufe', CONF:'Konfirmation',
-  GRAD:'Abschluss', OCCU:'Beruf', RESI:'Wohnort', EDUC:'Bildung',
-  NATI:'Nationalität', RELI:'Religion', TITL:'Titel',
-  NOTE:'Notiz', SOUR:'Quelle', REFN:'Referenz-Nr.',
-  FAMS:'Familie (Partner)', FAMC:'Familie (Kind)',
-  CHAN:'Geändert am', _NCHI:'Anzahl Kinder', _UID:'Interne ID',
-  DATE:'Datum', PLAC:'Ort', AGE:'Alter', TIME:'Uhrzeit',
-  GIVN:'Vorname', SURN:'Nachname', TYPE:'Typ',
-  CONT:'(Forts.)', CONC:'(Forts.)', _LOC:'Ortsreferenz',
+  NAME: 'Name',          SEX:   'Geschlecht',    BIRT:  'Geburt',
+  DEAT: 'Tod',           MARR:  'Heirat',         BURI:  'Beerdigung',
+  BAPM: 'Taufe',         CHR:   'Taufe',          CONF:  'Konfirmation',
+  GRAD: 'Abschluss',     OCCU:  'Beruf',          RESI:  'Wohnort',
+  EDUC: 'Bildung',       NATI:  'Nationalität',   RELI:  'Religion',
+  TITL: 'Titel',         NOTE:  'Notiz',          SOUR:  'Quelle',
+  REFN: 'Referenz-Nr.',  FAMS:  'Familie (Partner)', FAMC: 'Familie (Kind)',
+  CHAN: 'Geändert am',   _NCHI: 'Anzahl Kinder',  _UID:  'Interne ID',
+  DATE: 'Datum',         PLAC:  'Ort',            AGE:   'Alter',
+  TIME: 'Uhrzeit',       GIVN:  'Vorname',        SURN:  'Nachname',
+  TYPE: 'Typ',           CONT:  '(Forts.)',        CONC:  '(Forts.)',
+  _LOC: 'Ortsreferenz',
 };
-const tagLabel = t => TAG_DE[t] || t;
+
+function tagLabel(t) {
+  return TAG_DE[t] || t;
+}
 
 // ── Suche ──
+
 function doSearch() {
-  const q = document.getElementById('search-input').value.toLowerCase();
+  const q   = document.getElementById('search-input').value.toLowerCase();
   const sex = document.getElementById('sex-filter').value;
+
   let results = Object.values(db.persons).filter(p => {
-    const sexOk = !sex || p.sex === sex || (sex === 'U' && p.sex !== 'M' && p.sex !== 'F');
+    const sexOk = !sex
+      || p.sex === sex
+      || (sex === 'U' && p.sex !== 'M' && p.sex !== 'F');
     if (!sexOk) return false;
     if (!q) return true;
-    const hay = [p.name, p.given, p.surname, p.birt.date, p.birt.plac, p.deat.date, p.deat.plac].join(' ').toLowerCase();
+
+    const hay = [
+      p.name, p.given, p.surname,
+      p.birt.date, p.birt.plac,
+      p.deat.date, p.deat.plac
+    ].join(' ').toLowerCase();
+
     return q.split(/\s+/).filter(Boolean).every(t => hay.includes(t));
   });
-  results.sort((a, b) => (a.surname || a.name).localeCompare(b.surname || b.name, 'de'));
+
+  results.sort((a, b) =>
+    (a.surname || a.name).localeCompare(b.surname || b.name, 'de')
+  );
+
   renderList(results, q);
 }
 
 function renderList(list, q) {
-  document.getElementById('results-count').textContent =
-    list.length + ' Person' + (list.length !== 1 ? 'en' : '') +
-    (q ? ' für „' + q + '"' : '') + (list.length > 100 ? ' (erste 100)' : '');
+  const count = list.length;
+  let label = count + ' Person' + (count !== 1 ? 'en' : '');
+  if (q) label += ' für „' + q + '"';
+  if (count > 100) label += ' (erste 100)';
+  document.getElementById('results-count').textContent = label;
+
   const el = document.getElementById('results-list');
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>Keine Personen gefunden.</div>'; return; }
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>Keine Personen gefunden.</div>';
+    return;
+  }
+
   el.innerHTML = list.slice(0, 100).map(p => {
-    const cls = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
+    const cls  = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
     const meta = shortMeta(p);
-    return `<div class="person-card" onclick="showDetail('${esc(p.id)}')">
-      <div class="person-avatar ${cls}">${esc(initials(p))}</div>
-      <div class="person-info">
-        <div class="person-name">${esc(p.name)}</div>
-        ${meta ? `<div class="person-meta">${esc(meta)}</div>` : ''}
-      </div>
-      <div class="chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-    </div>`;
+    return `
+      <div class="person-card" onclick="showDetail('${esc(p.id)}')">
+        <div class="person-avatar ${cls}">${esc(initials(p))}</div>
+        <div class="person-info">
+          <div class="person-name">${esc(p.name)}</div>
+          ${meta ? `<div class="person-meta">${esc(meta)}</div>` : ''}
+        </div>
+        <div class="chevron">
+          <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>`;
   }).join('');
 }
 
-// ── Detail ──
+// ── Detailansicht ──
+
 function showDetail(id) {
   const p = db.persons[id];
   if (!p) return;
+
   window.scrollTo(0, 0);
-  document.getElementById('view-main').style.display = 'none';
+  document.getElementById('view-main').style.display     = 'none';
   document.getElementById('view-settings').style.display = 'none';
-  document.getElementById('view-detail').style.display = 'block';
+  document.getElementById('view-detail').style.display   = 'block';
   document.getElementById('detail-header-name').textContent = p.name;
-  let parents = [], siblings = [], spouses = [], children = [];
+
+  // Verwandte sammeln
+  const parents  = [];
+  const siblings = [];
+  const spouses  = [];
+  const children = [];
+
   for (const famId of p.famc) {
-    const fam = db.families[famId]; if (!fam) continue;
+    const fam = db.families[famId];
+    if (!fam) continue;
+
     if (fam.husb && db.persons[fam.husb]) parents.push(db.persons[fam.husb]);
     if (fam.wife && db.persons[fam.wife]) parents.push(db.persons[fam.wife]);
-    for (const cId of fam.chil) { if (cId !== id && db.persons[cId]) siblings.push(db.persons[cId]); }
-  }
-  for (const famId of p.fams) {
-    const fam = db.families[famId]; if (!fam) continue;
-    if (fam.husb && fam.husb !== id && db.persons[fam.husb]) spouses.push(db.persons[fam.husb]);
-    if (fam.wife && fam.wife !== id && db.persons[fam.wife]) spouses.push(db.persons[fam.wife]);
-    for (const cId of fam.chil) { if (db.persons[cId]) children.push(db.persons[cId]); }
-  }
-  const cls = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
-  const sexLabel = p.sex === 'M' ? 'Männlich' : p.sex === 'F' ? 'Weiblich' : 'Unbekannt';
-  function relSection(title, arr) {
-    const items = arr.length
-      ? arr.map(r => `<div class="rel-chip" onclick="showDetail('${esc(r.id)}')">
-          <div><div class="rel-chip-name">${esc(r.name)}</div>
-          ${shortMeta(r) ? `<div class="rel-chip-dates">${esc(shortMeta(r))}</div>` : ''}</div>
-          <div class="rel-chip-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-        </div>`).join('')
-      : '<div class="no-relations">–</div>';
-    return `<div class="detail-card"><div class="detail-card-title">${title}</div><div class="relation-chips">${items}</div></div>`;
-  }
-  function infoRow(label, val) {
-    const empty = !val;
-    return `<div class="detail-row">
-      <div class="detail-row-label">${label}</div>
-      <div class="detail-row-value${empty ? ' empty-val' : ''}">${esc(val || 'unbekannt')}</div>
-    </div>`;
+
+    for (const cId of fam.chil) {
+      if (cId !== id && db.persons[cId]) siblings.push(db.persons[cId]);
+    }
   }
 
-  const hero = `<div class="detail-hero">
-    <div class="detail-avatar ${cls}">${esc(initials(p))}</div>
-    <div><div class="detail-name">${esc(p.name)}</div><div class="detail-sex">${sexLabel}</div></div>
-  </div>`;
+  for (const famId of p.fams) {
+    const fam = db.families[famId];
+    if (!fam) continue;
+
+    if (fam.husb && fam.husb !== id && db.persons[fam.husb]) spouses.push(db.persons[fam.husb]);
+    if (fam.wife && fam.wife !== id && db.persons[fam.wife]) spouses.push(db.persons[fam.wife]);
+
+    for (const cId of fam.chil) {
+      if (db.persons[cId]) children.push(db.persons[cId]);
+    }
+  }
+
+  const cls      = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
+  const sexLabel = p.sex === 'M' ? 'Männlich' : p.sex === 'F' ? 'Weiblich' : 'Unbekannt';
+
+  function relSection(title, arr) {
+    const items = arr.length
+      ? arr.map(r => `
+          <div class="rel-chip" onclick="showDetail('${esc(r.id)}')">
+            <div>
+              <div class="rel-chip-name">${esc(r.name)}</div>
+              ${shortMeta(r) ? `<div class="rel-chip-dates">${esc(shortMeta(r))}</div>` : ''}
+            </div>
+            <div class="rel-chip-arrow">
+              <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>`).join('')
+      : '<div class="no-relations">–</div>';
+
+    return `
+      <div class="detail-card">
+        <div class="detail-card-title">${title}</div>
+        <div class="relation-chips">${items}</div>
+      </div>`;
+  }
+
+  function infoRow(label, val) {
+    const empty = !val;
+    return `
+      <div class="detail-row">
+        <div class="detail-row-label">${label}</div>
+        <div class="detail-row-value${empty ? ' empty-val' : ''}">${esc(val || 'unbekannt')}</div>
+      </div>`;
+  }
+
+  const hero = `
+    <div class="detail-hero">
+      <div class="detail-avatar ${cls}">${esc(initials(p))}</div>
+      <div>
+        <div class="detail-name">${esc(p.name)}</div>
+        <div class="detail-sex">${sexLabel}</div>
+      </div>
+    </div>`;
 
   const relations = `
     <div class="ornament">❧ ✦ ❧</div>
-    ${relSection('Eltern', parents)}
+    ${relSection('Eltern',     parents)}
     ${relSection('Geschwister', siblings)}
-    ${relSection('Partner', spouses)}
-    ${relSection('Kinder', children)}
-  `;
+    ${relSection('Partner',    spouses)}
+    ${relSection('Kinder',     children)}`;
 
+  // Normal-Modus
   if (appMode === 'normal') {
     document.getElementById('detail-content').innerHTML = hero + `
-      <div class="detail-card"><div class="detail-card-title">Geburt</div>
-        ${infoRow('Datum', fmtDate(p.birt))}${infoRow('Ort', fmtPlace(p.birt, true))}
+      <div class="detail-card">
+        <div class="detail-card-title">Geburt</div>
+        ${infoRow('Datum', fmtDate(p.birt))}
+        ${infoRow('Ort',   fmtPlace(p.birt, true))}
       </div>
-      <div class="detail-card"><div class="detail-card-title">Tod</div>
-        ${infoRow('Datum', fmtDate(p.deat))}${infoRow('Ort', fmtPlace(p.deat, true))}
+      <div class="detail-card">
+        <div class="detail-card-title">Tod</div>
+        ${infoRow('Datum', fmtDate(p.deat))}
+        ${infoRow('Ort',   fmtPlace(p.deat, true))}
       </div>
     ` + relations;
     return;
   }
 
-  // ── Erweitert ──
-  const SKIP = new Set(['FAMS','FAMC']);
-  const EVENTS = new Set(['BIRT','DEAT','MARR','BURI','BAPM','CHR','CONF','GRAD','RESI','EVEN']);
-  const NOTES = new Set(['NOTE','SOUR']);
+  // Erweitert-Modus
+  const SKIP     = new Set(['FAMS', 'FAMC']);
+  const EVENTS   = new Set(['BIRT','DEAT','MARR','BURI','BAPM','CHR','CONF','GRAD','RESI','EVEN']);
+  const NOTES    = new Set(['NOTE', 'SOUR']);
   const PERSONAL = new Set(['NAME','SEX','OCCU','TITL','RELI','NATI','EDUC','_NCHI','REFN','_UID','CHAN']);
+
   function renderEntry(entry) {
-    // Notizen & mehrzeilige Felder zusammensetzen
+    // Notizen und Quellen: mehrzeiligen Text zusammensetzen
     if (NOTES.has(entry.tag)) {
-      let text = entry.val || '';
-      const rest = [];
+      let text     = entry.val || '';
+      const rest   = [];
+
       for (const ch of entry.children) {
-        if (ch.tag === 'CONT') text += '\n' + ch.val;
+        if (ch.tag === 'CONT')      text += '\n' + ch.val;
         else if (ch.tag === 'CONC') text += ch.val;
-        else rest.push(ch);
+        else                        rest.push(ch);
       }
-      const childHTML = rest.map(ch => `<div class="raw-child">
-        <span class="raw-tag">${esc(tagLabel(ch.tag))}</span>
-        <span class="raw-val">${esc(ch.val)}</span>
-      </div>`).join('');
-      return `<div class="raw-entry">
-        <span class="raw-tag">${esc(tagLabel(entry.tag))}</span>
-        <div class="raw-val"><span class="note-text">${esc(text)}</span>${childHTML ? '<div class="raw-children">'+childHTML+'</div>' : ''}</div>
-      </div>`;
+
+      const childHTML = rest.map(ch =>
+        `<div class="raw-child">
+          <span class="raw-tag">${esc(tagLabel(ch.tag))}</span>
+          <span class="raw-val">${esc(ch.val)}</span>
+        </div>`
+      ).join('');
+
+      return `
+        <div class="raw-entry">
+          <span class="raw-tag">${esc(tagLabel(entry.tag))}</span>
+          <div class="raw-val">
+            <span class="note-text">${esc(text)}</span>
+            ${childHTML ? '<div class="raw-children">' + childHTML + '</div>' : ''}
+          </div>
+        </div>`;
     }
 
-    // CONC-Zeilen für NAME etc. zusammensetzen
+    // Alle anderen Tags
     let mainVal = entry.val || '';
-    const visChildren = entry.children.filter(ch => ch.tag !== 'CONC' && ch.tag !== '_LOC');
-    for (const ch of entry.children) { if (ch.tag === 'CONC') mainVal += ch.val; }
 
-    if (entry.tag === 'SEX') mainVal = mainVal === 'M' ? 'Männlich' : mainVal === 'F' ? 'Weiblich' : 'Unbekannt';
+    // CONC-Zeilen anhängen
+    for (const ch of entry.children) {
+      if (ch.tag === 'CONC') mainVal += ch.val;
+    }
+
+    if (entry.tag === 'SEX') {
+      mainVal = mainVal === 'M' ? 'Männlich' : mainVal === 'F' ? 'Weiblich' : 'Unbekannt';
+    }
+
+    const visChildren = entry.children.filter(ch => ch.tag !== 'CONC' && ch.tag !== '_LOC');
 
     const childHTML = visChildren.map(ch => {
       let cv = ch.val;
       if (ch.tag === 'PLAC') cv = fmtPlace({ plac: ch.val }, true) || ch.val;
-      // CONT in Kind-Notizen
+
+      // CONT-Zeilen in Kind-Einträgen zusammensetzen
       let contText = cv;
-      for (const cc of (ch.children || [])) { if (cc.tag === 'CONT') contText += '\n' + cc.val; else if (cc.tag === 'CONC') contText += cc.val; }
-      return `<div class="raw-child">
-        <span class="raw-tag">${esc(tagLabel(ch.tag))}</span>
-        <span class="raw-val">${esc(contText)}</span>
-      </div>`;
+      for (const cc of (ch.children || [])) {
+        if (cc.tag === 'CONT')      contText += '\n' + cc.val;
+        else if (cc.tag === 'CONC') contText += cc.val;
+      }
+
+      return `
+        <div class="raw-child">
+          <span class="raw-tag">${esc(tagLabel(ch.tag))}</span>
+          <span class="raw-val">${esc(contText)}</span>
+        </div>`;
     }).join('');
 
-    return `<div class="raw-entry">
-      <span class="raw-tag">${esc(tagLabel(entry.tag))}</span>
-      <div class="raw-val">${esc(mainVal)}${childHTML ? '<div class="raw-children">'+childHTML+'</div>' : ''}</div>
-    </div>`;
+    return `
+      <div class="raw-entry">
+        <span class="raw-tag">${esc(tagLabel(entry.tag))}</span>
+        <div class="raw-val">
+          ${esc(mainVal)}
+          ${childHTML ? '<div class="raw-children">' + childHTML + '</div>' : ''}
+        </div>
+      </div>`;
   }
 
   function rawBlock(title, entries) {
     if (!entries.length) return '';
-    return `<div class="raw-block"><div class="raw-block-title">${title}</div>${entries.map(renderEntry).join('')}</div>`;
+    return `
+      <div class="raw-block">
+        <div class="raw-block-title">${title}</div>
+        ${entries.map(renderEntry).join('')}
+      </div>`;
   }
 
-  const personal = [], events = [], notes = [], misc = [];
+  // Einträge nach Gruppe sortieren
+  const personal = [];
+  const events   = [];
+  const notes    = [];
+  const misc     = [];
+
   for (const entry of (p._raw || [])) {
-    if (SKIP.has(entry.tag)) continue;
+    if (SKIP.has(entry.tag))     continue;
     if (PERSONAL.has(entry.tag)) personal.push(entry);
     else if (EVENTS.has(entry.tag)) events.push(entry);
-    else if (NOTES.has(entry.tag)) notes.push(entry);
-    else misc.push(entry);
+    else if (NOTES.has(entry.tag))  notes.push(entry);
+    else                             misc.push(entry);
   }
 
-  document.getElementById('detail-content').innerHTML = hero
+  document.getElementById('detail-content').innerHTML =
+    hero
     + `<div class="detail-sex" style="padding:0 16px 12px;font-size:12px;color:var(--sepia);">ID: ${esc(p.id)}</div>`
-    + rawBlock('Person', personal)
-    + rawBlock('Ereignisse', events)
+    + rawBlock('Person',            personal)
+    + rawBlock('Ereignisse',        events)
     + rawBlock('Notizen & Quellen', notes)
     + (misc.length ? rawBlock('Weitere Felder', misc) : '')
     + relations;
 }
 
+// ── Navigation ──
+
 function backToSearch() {
   document.getElementById('view-detail').style.display = 'none';
-  document.getElementById('view-main').style.display = 'block';
+  document.getElementById('view-main').style.display   = 'block';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-search').classList.add('active');
   window.scrollTo(0, 0);
 }
 
-// ── Tab Navigation ──	   
 function switchTab(tab) {
-  if (tab === 'search' && document.getElementById('view-upload').style.display !== 'none') return;
+  const uploadVisible  = document.getElementById('view-upload').style.display  !== 'none';
+  const loadingVisible = document.getElementById('view-loading').style.display !== 'none';
+  if (tab === 'search' && (uploadVisible || loadingVisible)) return;
+
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  document.getElementById('view-detail').style.display = 'none';
-  document.getElementById('view-main').style.display = tab === 'search' ? 'block' : 'none';
+
+  document.getElementById('view-detail').style.display   = 'none';
+  document.getElementById('view-main').style.display     = tab === 'search'   ? 'block' : 'none';
   document.getElementById('view-settings').style.display = tab === 'settings' ? 'block' : 'none';
   window.scrollTo(0, 0);
 }
 
-// ── Einstellungen ──	  
+// ── Einstellungen ──
+
 function setMode(mode) {
   appMode = mode;
   localStorage.setItem('ahnen-mode', mode);
-  document.getElementById('btn-normal').classList.toggle('active', mode === 'normal');
+  document.getElementById('btn-normal').classList.toggle('active',   mode === 'normal');
   document.getElementById('btn-extended').classList.toggle('active', mode === 'extended');
-  document.getElementById('mode-desc').textContent = mode === 'normal' ? 'Wichtigste Informationen' : 'Alle GEDCOM-Felder';
+  document.getElementById('mode-desc').textContent =
+    mode === 'normal' ? 'Wichtigste Informationen' : 'Alle GEDCOM-Felder';
 }
 
-// ── Datei laden ──	
-function loadFile(file) {
-  const r = new FileReader();
-  r.onload = e => {
-    parseGedcom(e.target.result);
-    const total = Object.keys(db.persons).length;
-    const fams = Object.keys(db.families).length;
-    const withBirt = Object.values(db.persons).filter(p => p.birt && p.birt.date).length;
-    document.getElementById('stats-bar').innerHTML = [
-      `<div class="stat-pill"><strong>${total.toLocaleString('de')}</strong> Personen</div>`,
-      `<div class="stat-pill"><strong>${fams.toLocaleString('de')}</strong> Familien</div>`,
-      `<div class="stat-pill"><strong>${withBirt.toLocaleString('de')}</strong> mit Geburtsdatum</div>`,
-      `<div class="stat-pill">${esc(file.name)}</div>`
-    ].join('');
-    document.getElementById('file-name-label').textContent = file.name;
-    document.getElementById('view-upload').style.display = 'none';
-    document.getElementById('view-main').style.display = 'block';
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-search').classList.add('active');
-    doSearch();
-  };
-  r.readAsText(file, 'UTF-8');
-}
-
-function resetApp() {
-  db = { persons: {}, families: {} };
-  ['view-detail','view-main','view-settings'].forEach(id => document.getElementById(id).style.display = 'none');
-  document.getElementById('view-upload').style.display = 'flex';
-  document.getElementById('file-input').value = '';
-  document.getElementById('search-input').value = '';
-  document.getElementById('file-name-label').textContent = '–';
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-search').classList.add('active');
-  currentTab = 'search';
-}
+// ── Hilfsfunktion: HTML escapen ──
 
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '')
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;');
 }
 
-// Init
-setMode(appMode);
-document.getElementById('version-label').textContent = APP_VERSION;
-drawQR(document.getElementById('qr-canvas'), APP_URL);
+// ── App-Start ──
 
-document.getElementById('file-input').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+async function init() {
+  setMode(appMode);
+  document.getElementById('version-label').textContent = APP_VERSION;
+
+  try {
+    idb = await openIDB();
+    const storedText = await idbGet('text');
+    const storedName = await idbGet('name');
+    const storedSize = await idbGet('size');
+
+    if (storedText && storedName) {
+      // Gespeicherte Datei automatisch laden
+      document.getElementById('loading-text').textContent = `„${storedName}" wird geladen …`;
+      setTimeout(() => {
+        parseGedcom(storedText);
+        showLoaded(storedName, storedSize || storedText.length);
+      }, 50);
+    } else {
+      // Kein gespeicherter Stand → Upload-Screen zeigen
+      document.getElementById('view-loading').style.display = 'none';
+      document.getElementById('view-upload').style.display  = 'flex';
+    }
+  } catch (err) {
+    console.error('IndexedDB Fehler:', err);
+    document.getElementById('view-loading').style.display = 'none';
+    document.getElementById('view-upload').style.display  = 'flex';
+  }
+}
+
+// ── Event Listener ──
+
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
 const dz = document.getElementById('drop-zone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+dz.addEventListener('dragover', e => {
+  e.preventDefault();
+  dz.classList.add('drag-over');
+});
+dz.addEventListener('dragleave', () => {
+  dz.classList.remove('drag-over');
+});
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
 }
+
+init();
 </script>
 </body>
 </html>
