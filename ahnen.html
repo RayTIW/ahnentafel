@@ -241,6 +241,40 @@ select { width: 130px; flex-shrink: 0; }
 .new-file-btn-full svg { width: 18px; height: 18px; stroke: var(--sepia-light); fill: none; stroke-width: 1.5; }
 .danger-btn { width: 100%; padding: 10px 16px; background: #fff; border: 0.5px solid rgba(180,40,40,0.25); border-radius: 10px; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 13px; color: #b42828; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .danger-btn:active { background: #fff0f0; }
+
+/* Stern-Button im Detail-Header */
+.star-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 6px; color: var(--sepia-light);
+  display: flex; align-items: center;
+  transition: color 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+.star-btn:active { transform: scale(1.2); }
+.star-btn.active { color: var(--sepia-light); }
+.star-btn svg {
+  width: 24px; height: 24px;
+  stroke: var(--sepia-light); fill: none; stroke-width: 1.5;
+  transition: stroke 0.15s, fill 0.15s;
+}
+.star-btn.active svg {
+  stroke: var(--sepia-light); fill: var(--sepia-light);
+}
+
+/* Favoriten-View */
+#view-favorites { display: none; }
+.fav-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: calc(100dvh - 120px - var(--tab-h) - var(--safe-bottom));
+  color: var(--ink-soft); font-size: 15px; gap: 12px;
+}
+.fav-empty-icon { font-size: 48px; opacity: 0.4; }
+.fav-header {
+  padding: 16px 16px 8px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--sepia);
+}
+
 /* QR Code */
 .qr-card {
   background: #fff; border: 0.5px solid var(--border);
@@ -312,8 +346,18 @@ select { width: 130px; flex-shrink: 0; }
       Zurück
     </button>
     <div class="detail-header-title" id="detail-header-name"></div>
+    <button class="star-btn" id="star-btn" onclick="toggleFavorite()" title="Favorit">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    </button>
   </div>
   <div id="detail-content"></div>
+</div>
+
+
+<!-- Favoriten -->
+<div id="view-favorites">
+  <div class="fav-header" id="fav-header"></div>
+  <div id="fav-list" style="padding: 0 16px 16px;"></div>
 </div>
 
 <!-- Einstellungen -->
@@ -416,6 +460,10 @@ select { width: 130px; flex-shrink: 0; }
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     Suche
   </button>
+  <button class="tab-btn" id="tab-favorites" onclick="switchTab('favorites')">
+    <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    Favoriten
+  </button>
   <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     Einstellungen
@@ -426,7 +474,7 @@ select { width: 130px; flex-shrink: 0; }
 'use strict';
 
 // ── Konstanten ──
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.1';
 const APP_URL     = 'https://raytiw.github.io/ahnentafel/';
 const DB_NAME     = 'ahnentafel';
 const DB_VERSION  = 1;
@@ -439,6 +487,7 @@ let currentTab     = 'search';
 let idb            = null;   // IndexedDB-Instanz
 let pendingFileText = '';    // Zwischenspeicher vor Speichern-Entscheidung
 let pendingFileName = '';
+let favorites = JSON.parse(localStorage.getItem('ahnen-favorites') || '[]');
 
 // ── IndexedDB-Hilfsfunktionen ──
 
@@ -838,6 +887,7 @@ function showDetail(id) {
   document.getElementById('view-settings').style.display = 'none';
   document.getElementById('view-detail').style.display   = 'block';
   document.getElementById('detail-header-name').textContent = p.name;
+  updateStarBtn(id);
 
   // Verwandte sammeln
   const parents  = [];
@@ -1045,11 +1095,80 @@ function showDetail(id) {
     + relations;
 }
 
+
+// ── Favoriten ──
+
+function saveFavorites() {
+  localStorage.setItem('ahnen-favorites', JSON.stringify(favorites));
+}
+
+function toggleFavorite() {
+  const id = document.getElementById('star-btn').dataset.personId;
+  if (!id) return;
+
+  const idx = favorites.indexOf(id);
+  if (idx === -1) {
+    favorites.push(id);
+  } else {
+    favorites.splice(idx, 1);
+  }
+
+  saveFavorites();
+  updateStarBtn(id);
+}
+
+function updateStarBtn(id) {
+  const btn = document.getElementById('star-btn');
+  if (!btn) return;
+  btn.dataset.personId = id;
+  const isFav = favorites.includes(id);
+  btn.classList.toggle('active', isFav);
+  btn.title = isFav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen';
+}
+
+function renderFavorites() {
+  const header = document.getElementById('fav-header');
+  const list   = document.getElementById('fav-list');
+  const favPersons = favorites
+    .map(id => db.persons[id])
+    .filter(Boolean);
+
+  if (!favPersons.length) {
+    header.textContent = '';
+    list.innerHTML = `
+      <div class="fav-empty">
+        <div class="fav-empty-icon">☆</div>
+        <div>Noch keine Favoriten</div>
+        <div style="font-size:13px;color:var(--sepia);">In einer Person auf ★ tippen</div>
+      </div>`;
+    return;
+  }
+
+  header.textContent = favPersons.length + ' Favorit' + (favPersons.length !== 1 ? 'en' : '');
+
+  list.innerHTML = favPersons.map(p => {
+    const cls  = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
+    const meta = shortMeta(p);
+    return `
+      <div class="person-card" onclick="showDetail('${esc(p.id)}')">
+        <div class="person-avatar ${cls}">${esc(initials(p))}</div>
+        <div class="person-info">
+          <div class="person-name">${esc(p.name)}</div>
+          ${meta ? `<div class="person-meta">${esc(meta)}</div>` : ''}
+        </div>
+        <div class="chevron">
+          <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 // ── Navigation ──
 
 function backToSearch() {
-  document.getElementById('view-detail').style.display = 'none';
-  document.getElementById('view-main').style.display   = 'block';
+  document.getElementById('view-detail').style.display    = 'none';
+  document.getElementById('view-favorites').style.display = 'none';
+  document.getElementById('view-main').style.display      = 'block';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-search').classList.add('active');
   window.scrollTo(0, 0);
@@ -1064,9 +1183,11 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
 
-  document.getElementById('view-detail').style.display   = 'none';
-  document.getElementById('view-main').style.display     = tab === 'search'   ? 'block' : 'none';
-  document.getElementById('view-settings').style.display = tab === 'settings' ? 'block' : 'none';
+  document.getElementById('view-detail').style.display    = 'none';
+  document.getElementById('view-main').style.display      = tab === 'search'    ? 'block' : 'none';
+  document.getElementById('view-favorites').style.display = tab === 'favorites' ? 'block' : 'none';
+  document.getElementById('view-settings').style.display  = tab === 'settings'  ? 'block' : 'none';
+  if (tab === 'favorites') renderFavorites();
   window.scrollTo(0, 0);
 }
 
