@@ -275,6 +275,149 @@ select { width: 130px; flex-shrink: 0; }
   text-transform: uppercase; color: var(--sepia);
 }
 
+
+/* ── Stammbaum ── */
+#view-tree { display: none; flex-direction: column; height: calc(100dvh - var(--tab-h) - var(--safe-bottom)); overflow: hidden; }
+
+.tree-header {
+  padding: 14px 16px 12px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(245,240,232,0.95);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.tree-header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px; font-weight: 600; color: var(--ink);
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tree-print-btn {
+  background: none; border: 0.5px solid var(--border);
+  border-radius: 8px; padding: 7px 12px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 13px; color: var(--ink-soft); cursor: pointer;
+  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+}
+.tree-print-btn:active { background: var(--sepia-faint); }
+.tree-print-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+.tree-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Höhe = Viewport minus Header minus Tab-Bar */
+  height: calc(100dvh - 60px - var(--tab-h) - var(--safe-bottom) - 52px);
+  width: 100%;
+  /* Padding innerhalb des scrollbaren Bereichs */
+  padding: 20px 24px 32px;
+  box-sizing: border-box;
+}
+
+/* Generationen-Container */
+.tree-canvas {
+  display: inline-flex;   /* inline damit es so breit wird wie nötig */
+  flex-direction: column;
+  gap: 0;
+  min-width: max-content;
+}
+
+.tree-gen {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+}
+
+/* Stammbaum-Karte */
+.tree-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 120px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.tree-card {
+  width: 108px;
+  background: #fff;
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 8px 7px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+  z-index: 2;
+}
+.tree-card:active { border-color: var(--sepia-light); box-shadow: 0 2px 10px var(--shadow); }
+.tree-card.root { border-color: var(--sepia-light); background: var(--sepia-faint); }
+.tree-card.empty {
+  background: transparent; border: 1px dashed var(--border);
+  cursor: default; opacity: 0.5;
+}
+.tree-card.empty:active { border-color: var(--border); box-shadow: none; }
+
+.tree-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 13px; font-weight: 600; color: #fff;
+  background: var(--sepia); margin: 0 auto 5px;
+}
+.tree-avatar.f { background: var(--accent); }
+.tree-avatar.u { background: var(--ink-soft); }
+
+.tree-name {
+  font-size: 11px; font-weight: 500; color: var(--ink);
+  line-height: 1.3; margin-bottom: 2px;
+  word-break: break-word;
+}
+.tree-dates {
+  font-size: 9px; color: var(--ink-soft); line-height: 1.3;
+}
+
+/* Verbindungslinien */
+.tree-connector-down {
+  width: 1px; height: 16px;
+  background: var(--border);
+  margin: 0 auto;
+}
+.tree-connector-up {
+  width: 1px; height: 16px;
+  background: var(--border);
+  margin: 0 auto;
+}
+
+/* Horizontale Linie über Elternpaaren */
+.tree-h-line {
+  position: absolute;
+  top: 0; height: 1px;
+  background: var(--border);
+  z-index: 1;
+}
+
+/* Generationsbezeichnung */
+.tree-gen-label {
+  font-size: 10px; color: var(--sepia-light);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  text-align: center; padding: 4px 0 12px;
+  font-weight: 500;
+}
+
+/* Print-Modus */
+@media print {
+  header, .tab-bar, .tree-header .back-btn, .tree-header .tree-print-btn { display: none !important; }
+  body { padding-bottom: 0 !important; background: #fff !important; }
+  #view-tree { display: block !important; }
+  .tree-scroll { overflow: visible !important; padding: 10px !important; }
+  .tree-canvas { page-break-inside: avoid; }
+  .tree-card { break-inside: avoid; }
+}
+
 /* QR Code */
 .qr-card {
   background: #fff; border: 0.5px solid var(--border);
@@ -346,6 +489,9 @@ select { width: 130px; flex-shrink: 0; }
       Zurück
     </button>
     <div class="detail-header-title" id="detail-header-name"></div>
+    <button class="back-btn" id="tree-btn" onclick="showTree()" title="Stammbaum" style="padding:7px 10px;">
+      <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.5;"><path d="M12 22v-7M12 15l-4-4M12 15l4-4M8 7H4v4h4V7zM16 7h4v4h-4V7zM10 3h4v4h-4V3z"/></svg>
+    </button>
     <button class="star-btn" id="star-btn" onclick="toggleFavorite()" title="Favorit">
       <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     </button>
@@ -353,6 +499,24 @@ select { width: 130px; flex-shrink: 0; }
   <div id="detail-content"></div>
 </div>
 
+
+<!-- Stammbaum -->
+<div id="view-tree">
+  <div class="tree-header">
+    <button class="back-btn" onclick="closeTree()">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Zurück
+    </button>
+    <div class="tree-header-title" id="tree-title"></div>
+    <button class="tree-print-btn" onclick="window.print()">
+      <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Drucken / PDF
+    </button>
+  </div>
+  <div class="tree-scroll">
+    <div class="tree-canvas" id="tree-canvas"></div>
+  </div>
+</div>
 
 <!-- Favoriten -->
 <div id="view-favorites">
@@ -380,6 +544,21 @@ select { width: 130px; flex-shrink: 0; }
       <div class="settings-info">
         <strong>Normal:</strong> Geburt, Tod, Eltern, Geschwister, Partner, Kinder.<br><br>
         <strong>Erweitert:</strong> Alle Felder aus der GEDCOM-Datei — inklusive Notizen, Quellen, Berufe, Adressen und sämtliche erfassten Ereignisse.
+      </div>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-section-title">Stammbaum</div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Generationen</div>
+          <div class="settings-row-sub">Anzahl Vorfahren-Generationen</div>
+        </div>
+        <div class="seg-control">
+          <button class="seg-btn" id="btn-gen3" onclick="setGenerations(3)">3</button>
+          <button class="seg-btn" id="btn-gen4" onclick="setGenerations(4)">4</button>
+        </div>
       </div>
     </div>
   </div>
@@ -474,7 +653,7 @@ select { width: 130px; flex-shrink: 0; }
 'use strict';
 
 // ── Konstanten ──
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.0.2';
 const APP_URL     = 'https://raytiw.github.io/ahnentafel/';
 const DB_NAME     = 'ahnentafel';
 const DB_VERSION  = 1;
@@ -487,7 +666,9 @@ let currentTab     = 'search';
 let idb            = null;   // IndexedDB-Instanz
 let pendingFileText = '';    // Zwischenspeicher vor Speichern-Entscheidung
 let pendingFileName = '';
-let favorites = JSON.parse(localStorage.getItem('ahnen-favorites') || '[]');
+let favorites    = JSON.parse(localStorage.getItem('ahnen-favorites') || '[]');
+let treeGens     = parseInt(localStorage.getItem('ahnen-tree-gens') || '4');
+let treePersonId = null; // aktuell angezeigte Person im Stammbaum
 
 // ── IndexedDB-Hilfsfunktionen ──
 
@@ -1096,6 +1277,14 @@ function showDetail(id) {
 }
 
 
+
+function setGenerations(n) {
+  treeGens = n;
+  localStorage.setItem('ahnen-tree-gens', n);
+  document.getElementById('btn-gen3').classList.toggle('active', n === 3);
+  document.getElementById('btn-gen4').classList.toggle('active', n === 4);
+}
+
 // ── Favoriten ──
 
 function saveFavorites() {
@@ -1163,10 +1352,142 @@ function renderFavorites() {
   }).join('');
 }
 
+
+// ── Stammbaum ──
+
+function showTree() {
+  const id = document.getElementById('star-btn').dataset.personId;
+  if (!id || !db.persons[id]) return;
+  treePersonId = id;
+
+  window.scrollTo(0, 0);
+  document.getElementById('view-detail').style.display = 'none';
+  document.getElementById('view-tree').style.display   = 'flex';
+
+  const p = db.persons[id];
+  document.getElementById('tree-title').textContent = p.name;
+  renderTree(id);
+}
+
+function closeTree() {
+  document.getElementById('view-tree').style.display   = 'none';
+  document.getElementById('view-detail').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function getParents(personId) {
+  const p = db.persons[personId];
+  if (!p || !p.famc.length) return [null, null];
+
+  const fam = db.families[p.famc[0]];
+  if (!fam) return [null, null];
+
+  return [
+    fam.husb ? (db.persons[fam.husb] || null) : null,
+    fam.wife ? (db.persons[fam.wife] || null) : null,
+  ];
+}
+
+function renderTree(rootId) {
+  const canvas = document.getElementById('tree-canvas');
+  canvas.innerHTML = '';
+
+  // Baum aufbauen: Array von Generationen
+  // gen[0] = Wurzel, gen[1] = Eltern, gen[2] = Großeltern, ...
+  const gens = [[rootId]];
+
+  for (let g = 1; g < treeGens; g++) {
+    const prevGen = gens[g - 1];
+    const thisGen = [];
+
+    for (const id of prevGen) {
+      if (id) {
+        const [father, mother] = getParents(id);
+        thisGen.push(father ? father.id : null);
+        thisGen.push(mother ? mother.id : null);
+      } else {
+        thisGen.push(null, null);
+      }
+    }
+    gens.push(thisGen);
+  }
+
+  const genLabels = ['Person', 'Eltern', 'Großeltern', 'Urgroßeltern', 'Ururgroßeltern'];
+
+  // Von oben (älteste) nach unten (Person) rendern
+  for (let g = gens.length - 1; g >= 0; g--) {
+    const ids     = gens[g];
+    const label   = genLabels[g] || `Generation ${g}`;
+
+    // Generations-Label
+    const labelEl = document.createElement('div');
+    labelEl.className = 'tree-gen-label';
+    labelEl.textContent = label;
+    canvas.appendChild(labelEl);
+
+    // Zeile der Knoten
+    const row = document.createElement('div');
+    row.className = 'tree-gen';
+
+    for (const id of ids) {
+      const node = document.createElement('div');
+      node.className = 'tree-node';
+
+      // Verbindungslinie nach oben (zur nächsten Generation)
+      if (g > 0) {
+        const lineUp = document.createElement('div');
+        lineUp.className = 'tree-connector-up';
+        node.appendChild(lineUp);
+      }
+
+      // Karte
+      const card = document.createElement('div');
+      if (!id) {
+        card.className = 'tree-card empty';
+        card.innerHTML = '<div class="tree-avatar u">?</div><div class="tree-name" style="color:var(--sepia-light);">unbekannt</div>';
+      } else {
+        const p   = db.persons[id];
+        const cls = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
+        const ini = initials(p);
+        const bYear = p.birt && p.birt.date ? p.birt.date.match(/\d{4}/) : null;
+        const dYear = p.deat && p.deat.date ? p.deat.date.match(/\d{4}/) : null;
+        const dates = [bYear ? '* ' + bYear[0] : '', dYear ? '† ' + dYear[0] : ''].filter(Boolean).join('  ');
+
+        card.className = 'tree-card' + (g === 0 ? ' root' : '');
+        card.innerHTML =
+          `<div class="tree-avatar ${cls}">${esc(ini)}</div>` +
+          `<div class="tree-name">${esc(p.name)}</div>` +
+          (dates ? `<div class="tree-dates">${esc(dates)}</div>` : '');
+
+        card.onclick = () => {
+          document.getElementById('view-tree').style.display   = 'none';
+          document.getElementById('view-detail').style.display = 'none';
+          showDetail(id);
+          // Nach showDetail wieder Baum-Button aktivieren für Rückkehr
+          treePersonId = rootId;
+        };
+      }
+      node.appendChild(card);
+
+      // Verbindungslinie nach unten (zur vorherigen Generation)
+      if (g < gens.length - 1) {
+        const lineDown = document.createElement('div');
+        lineDown.className = 'tree-connector-down';
+        node.appendChild(lineDown);
+      }
+
+      row.appendChild(node);
+    }
+
+    canvas.appendChild(row);
+  }
+}
+
 // ── Navigation ──
 
 function backToSearch() {
   document.getElementById('view-detail').style.display    = 'none';
+  document.getElementById('view-tree').style.display      = 'none';
   document.getElementById('view-favorites').style.display = 'none';
   document.getElementById('view-main').style.display      = 'block';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1247,6 +1568,7 @@ function drawQR(canvas, url) {
 async function init() {
   setMode(appMode);
   document.getElementById('version-label').textContent = APP_VERSION;
+  setGenerations(treeGens);
   drawQR(document.getElementById('qr-canvas'), APP_URL);
 
   try {
