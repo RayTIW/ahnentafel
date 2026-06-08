@@ -302,6 +302,15 @@ select { width: 130px; flex-shrink: 0; }
 }
 .tree-print-btn:active { background: var(--sepia-faint); }
 .tree-print-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.tree-download-btn {
+  background: var(--sepia); border: none;
+  border-radius: 8px; padding: 7px 12px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 13px; color: #fff; cursor: pointer;
+  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+}
+.tree-download-btn:active { opacity: 0.85; }
+.tree-download-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
 
 .tree-scroll {
   overflow-x: auto;
@@ -425,12 +434,13 @@ select { width: 130px; flex-shrink: 0; }
 }
 
 /* Print-Modus */
+@page { size: landscape; margin: 10mm; }
 @media print {
   /* Alles ausblenden außer dem Stammbaum */
   header, .tab-bar { display: none !important; }
   #view-upload, #view-loading, #view-main, #view-detail,
   #view-favorites, #view-settings { display: none !important; }
-  .tree-header .back-btn, .tree-header .tree-print-btn { display: none !important; }
+  .tree-header .back-btn, .tree-header .tree-print-btn, .tree-header .tree-download-btn { display: none !important; }
   body { padding-bottom: 0 !important; background: #fff !important; }
   #view-tree {
     display: flex !important; flex-direction: column !important;
@@ -535,10 +545,16 @@ select { width: 130px; flex-shrink: 0; }
       Zurück
     </button>
     <div class="tree-header-title" id="tree-title"></div>
-    <button class="tree-print-btn" onclick="window.print()">
-      <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Drucken / PDF
-    </button>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button class="tree-print-btn" onclick="window.print()">
+        <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Drucken
+      </button>
+      <button class="tree-download-btn" onclick="downloadTreePDF()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </button>
+    </div>
   </div>
   <div class="tree-scroll">
     <div class="tree-canvas" id="tree-canvas"></div>
@@ -681,7 +697,7 @@ select { width: 130px; flex-shrink: 0; }
 'use strict';
 
 // ── Konstanten ──
-const APP_VERSION = '2.0.3';
+const APP_VERSION = '2.0.4';
 const APP_URL     = 'https://raytiw.github.io/ahnentafel/';
 const DB_NAME     = 'ahnentafel';
 const DB_VERSION  = 1;
@@ -1381,6 +1397,50 @@ function renderFavorites() {
   }).join('');
 }
 
+
+
+// ── Stammbaum Download ──
+
+function downloadTreePDF() {
+  const treeCanvas = document.getElementById('tree-canvas');
+  const treeTitle  = document.getElementById('tree-title').textContent;
+  const treeHTML   = treeCanvas.outerHTML;
+
+  // Relevante CSS-Regeln aus dem Dokument extrahieren
+  const styles = Array.from(document.styleSheets)
+    .flatMap(s => {
+      try { return Array.from(s.cssRules).map(r => r.cssText); }
+      catch(e) { return []; }
+    })
+    .join('\n');
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('Popup wurde blockiert. Bitte Popups für diese Seite erlauben.');
+    return;
+  }
+
+  const doc = win.document;
+  doc.open();
+  doc.write('<!DOCTYPE html>');
+  doc.write('<html lang="de"><head>');
+  doc.write('<meta charset="UTF-8">');
+  doc.write('<title>Stammbaum \u2013 ' + treeTitle + '</title>');
+  doc.write('<style>');
+  doc.write('@page { size: landscape; margin: 10mm; }');
+  doc.write('* { box-sizing: border-box; margin: 0; padding: 0; }');
+  doc.write('body { background: #fff; font-family: sans-serif; padding: 16px; }');
+  doc.write(styles);
+  doc.write('.tree-canvas { display: inline-flex !important; flex-direction: column !important; align-items: center !important; }');
+  doc.write('</style></head><body>');
+  doc.write('<h2 style="font-family:serif;font-size:18px;margin-bottom:16px;color:#1a1209;">');
+  doc.write('Stammbaum \u2013 ' + treeTitle);
+  doc.write('</h2>');
+  doc.write(treeHTML);
+  doc.write('<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script>');
+  doc.write('</body></html>');
+  doc.close();
+}
 
 // ── Stammbaum ──
 
