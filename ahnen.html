@@ -370,6 +370,24 @@ select { width: 130px; flex-shrink: 0; }
 }
 .tree-card:active { border-color: var(--sepia-light); box-shadow: 0 2px 10px var(--shadow); }
 .tree-card.root { border-color: var(--sepia-light); background: var(--sepia-faint); }
+.tree-couple {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 2px;
+  justify-content: center;
+}
+.tree-couple-ring {
+  font-size: 12px;
+  color: var(--sepia-light);
+  padding-top: 8px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.tree-card-partner {
+  border-color: var(--sepia-light) !important;
+  background: var(--sepia-faint) !important;
+}
 .tree-card.empty {
   background: transparent; border: 1px dashed var(--border);
   cursor: default; opacity: 0.5;
@@ -620,6 +638,26 @@ select { width: 130px; flex-shrink: 0; }
           <button class="seg-btn" id="btn-dir-descendants" onclick="setTreeDir('descendants')">Nachfahren</button>
         </div>
       </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Geburtsort</div>
+          <div class="settings-row-sub">Geburtsort in der Karte anzeigen</div>
+        </div>
+        <div class="seg-control">
+          <button class="seg-btn active" id="btn-birthplace-yes" onclick="setTreeOpt('birthplace', true)">Ja</button>
+          <button class="seg-btn" id="btn-birthplace-no" onclick="setTreeOpt('birthplace', false)">Nein</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Partner anzeigen</div>
+          <div class="settings-row-sub">Ehepartner neben jeder Person</div>
+        </div>
+        <div class="seg-control">
+          <button class="seg-btn active" id="btn-partner-yes" onclick="setTreeOpt('partner', true)">Ja</button>
+          <button class="seg-btn" id="btn-partner-no" onclick="setTreeOpt('partner', false)">Nein</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="settings-section">
@@ -713,7 +751,7 @@ select { width: 130px; flex-shrink: 0; }
 'use strict';
 
 // ── Konstanten ──
-const APP_VERSION = '2.0.4';
+const APP_VERSION = '2.0.5';
 const APP_URL     = 'https://raytiw.github.io/ahnentafel/';
 const DB_NAME     = 'ahnentafel';
 const DB_VERSION  = 1;
@@ -729,7 +767,9 @@ let pendingFileName = '';
 let favorites    = JSON.parse(localStorage.getItem('ahnen-favorites') || '[]');
 let treeGens     = parseInt(localStorage.getItem('ahnen-tree-gens') || '4'); // Default: 4 Generationen
 let treeDir      = localStorage.getItem('ahnen-tree-dir') || 'ancestors'; // 'ancestors' oder 'descendants'
-let treePersonId = null; // aktuell angezeigte Person im Stammbaum
+let treePersonId    = null; // aktuell angezeigte Person im Stammbaum
+let treeShowBirth  = localStorage.getItem('ahnen-tree-birth')   !== 'false'; // Default: true
+let treeShowPartner = localStorage.getItem('ahnen-tree-partner') !== 'false'; // Default: true
 
 // ── IndexedDB-Hilfsfunktionen ──
 
@@ -1348,6 +1388,20 @@ function setGenerations(n) {
   updateGenLabel();
 }
 
+function setTreeOpt(opt, val) {
+  if (opt === 'birthplace') {
+    treeShowBirth = val;
+    localStorage.setItem('ahnen-tree-birth', val);
+    document.getElementById('btn-birthplace-yes').classList.toggle('active',  val);
+    document.getElementById('btn-birthplace-no').classList.toggle('active',  !val);
+  } else if (opt === 'partner') {
+    treeShowPartner = val;
+    localStorage.setItem('ahnen-tree-partner', val);
+    document.getElementById('btn-partner-yes').classList.toggle('active',  val);
+    document.getElementById('btn-partner-no').classList.toggle('active',  !val);
+  }
+}
+
 function updateGenLabel() {
   const sub = document.getElementById('gen-sub');
   if (sub) sub.textContent = 'Anzahl ' + (treeDir === 'ancestors' ? 'Vorfahren' : 'Nachfahren') + '-Generationen';
@@ -1525,6 +1579,19 @@ function getParents(personId) {
   ];
 }
 
+function getPartner(personId) {
+  // Gibt den ersten Ehepartner zurück (aus der ersten Ehe)
+  const p = db.persons[personId];
+  if (!p) return null;
+  for (const famId of p.fams) {
+    const fam = db.families[famId];
+    if (!fam) continue;
+    if (fam.husb && fam.husb !== personId && db.persons[fam.husb]) return db.persons[fam.husb];
+    if (fam.wife && fam.wife !== personId && db.persons[fam.wife]) return db.persons[fam.wife];
+  }
+  return null;
+}
+
 function getChildren(personId) {
   // Gibt alle Kinder einer Person zurück (aus allen Ehen)
   const p = db.persons[personId];
@@ -1593,11 +1660,15 @@ function makeCard(id, isRoot, rootId) {
   const dates = [bYear ? '* ' + bYear[0] : '', dYear ? '\u2020 ' + dYear[0] : '']
     .filter(Boolean).join('  ');
 
+  // Geburtsort (erstes Komma-Element = Ortsname)
+  const birthPlac = p.birt && p.birt.plac ? p.birt.plac.split(',')[0].trim() : '';
+
   card.className = 'tree-card' + (isRoot ? ' root' : '');
   card.innerHTML =
     '<div class="tree-avatar ' + cls + '">' + esc(ini) + '</div>' +
     '<div class="tree-name">' + esc(p.name) + '</div>' +
-    (dates ? '<div class="tree-dates">' + esc(dates) + '</div>' : '');
+    (dates ? '<div class="tree-dates">' + esc(dates) + '</div>' : '') +
+    (treeShowBirth && birthPlac ? '<div class="tree-dates">' + esc(birthPlac) + '</div>' : '');
 
   card.onclick = () => {
     document.getElementById('view-tree').style.display   = 'none';
@@ -1605,6 +1676,50 @@ function makeCard(id, isRoot, rootId) {
     showDetail(id);
     treePersonId = rootId;
   };
+
+  // Partner nur im Nachfahren-Modus anzeigen
+  if (treeShowPartner && treeDir === 'descendants') {
+    const partner = getPartner(id);
+    if (partner) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tree-couple';
+
+      const pCard = document.createElement('div');
+      const pcls  = partner.sex === 'F' ? 'f' : partner.sex === 'M' ? '' : 'u';
+      const pini  = initials(partner);
+      const pbYear = partner.birt && partner.birt.date ? partner.birt.date.match(/\d{4}/) : null;
+      const pdYear = partner.deat && partner.deat.date ? partner.deat.date.match(/\d{4}/) : null;
+      const pdates = [pbYear ? '* ' + pbYear[0] : '', pdYear ? '\u2020 ' + pdYear[0] : '']
+        .filter(Boolean).join('  ');
+      const pbirthPlac = partner.birt && partner.birt.plac ? partner.birt.plac.split(',')[0].trim() : '';
+
+      pCard.className = 'tree-card tree-card-partner';
+      pCard.innerHTML =
+        '<div class="tree-avatar ' + pcls + '">' + esc(pini) + '</div>' +
+        '<div class="tree-name">' + esc(partner.name) + '</div>' +
+        (pdates ? '<div class="tree-dates">' + esc(pdates) + '</div>' : '') +
+        (treeShowBirth && pbirthPlac ? '<div class="tree-dates">' + esc(pbirthPlac) + '</div>' : '');
+
+      pCard.onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('view-tree').style.display   = 'none';
+        document.getElementById('view-detail').style.display = 'none';
+        showDetail(partner.id);
+        treePersonId = rootId;
+      };
+
+      // Ehering-Symbol zwischen den Karten
+      const ring = document.createElement('div');
+      ring.className = 'tree-couple-ring';
+      ring.textContent = '⚭';
+
+      wrapper.appendChild(card);
+      wrapper.appendChild(ring);
+      wrapper.appendChild(pCard);
+      return wrapper;
+    }
+  }
+
   return card;
 }
 
@@ -1683,9 +1798,11 @@ function renderAncestors(canvas, rootId) {
 // ── Nachfahren-Baum (rekursiv) ──
 
 function renderDescendants(canvas, rootId) {
-  const NODE_W    = 120;
-  const ROW_H     = 32;
-  const genLabels = ['Person', 'Kinder', 'Enkelkinder', 'Urenkelkinder', 'Ururenkl.'];
+  const NODE_W      = 120;
+  const PARTNER_W   = treeShowPartner ? NODE_W + 20 : 0; // Breite Partner-Karte + Ring
+  const NODE_FULL_W = NODE_W + PARTNER_W;                // Gesamtbreite einer Karte inkl. Partner
+  const ROW_H       = 32;
+  const genLabels   = ['Person', 'Kinder', 'Enkelkinder', 'Urenkelkinder', 'Ururenkl.'];
 
   // Schritt 1: Baum als Datenstruktur aufbauen
   function buildNode(id, depth) {
@@ -1700,13 +1817,16 @@ function renderDescendants(canvas, rootId) {
 
   const root = buildNode(rootId, 0);
 
-  // Schritt 2: Breite berechnen — Blatt = NODE_W, Elter = Summe Kinder
+  // Schritt 2: Breite berechnen
+  // Blattknoten: NODE_FULL_W (inkl. evtl. Partner)
+  // Elternknoten: max(NODE_FULL_W, Summe Kinder) damit Elter nie schmaler als sein Inhalt
   function calcWidth(node) {
     if (node.children.length === 0) {
-      node.w = NODE_W;
+      node.w = NODE_FULL_W;
     } else {
       node.children.forEach(calcWidth);
-      node.w = node.children.reduce((s, c) => s + c.w, 0);
+      const childrenW = node.children.reduce((s, c) => s + c.w, 0);
+      node.w = Math.max(NODE_FULL_W, childrenW);
     }
   }
   calcWidth(root);
@@ -1896,6 +2016,8 @@ async function init() {
   document.getElementById('version-label').textContent = APP_VERSION;
   setGenerations(treeGens);
   setTreeDir(treeDir);
+  setTreeOpt('birthplace', treeShowBirth);
+  setTreeOpt('partner', treeShowPartner);
   drawQR(document.getElementById('qr-canvas'), APP_URL);
 
   try {
