@@ -434,25 +434,31 @@ select { width: 130px; flex-shrink: 0; }
 }
 
 /* Print-Modus */
-@page { size: landscape; margin: 10mm; }
+@page { size: landscape; margin: 8mm; }
 @media print {
-  /* Alles ausblenden außer dem Stammbaum */
   header, .tab-bar { display: none !important; }
   #view-upload, #view-loading, #view-main, #view-detail,
   #view-favorites, #view-settings { display: none !important; }
   .tree-header .back-btn, .tree-header .tree-print-btn, .tree-header .tree-download-btn { display: none !important; }
-  body { padding-bottom: 0 !important; background: #fff !important; }
+  body { padding-bottom: 0 !important; background: #fff !important; margin: 0 !important; }
   #view-tree {
     display: flex !important; flex-direction: column !important;
     height: auto !important; overflow: visible !important;
   }
   .tree-scroll {
-    overflow: visible !important; padding: 10px !important;
-    height: auto !important;
+    overflow: visible !important; padding: 4px !important;
+    height: auto !important; width: 100% !important;
   }
-  .tree-canvas { page-break-inside: avoid; }
+  .tree-canvas {
+    page-break-inside: avoid;
+    transform-origin: top left !important;
+    transform: scale(var(--tree-print-scale, 1)) !important;
+  }
   .tree-card { break-inside: avoid; }
-  .tree-connector-h { display: block !important; }
+  .tree-avatar { width: 24px !important; height: 24px !important; font-size: 10px !important; margin-bottom: 3px !important; }
+  .tree-name { font-size: 9px !important; }
+  .tree-dates { font-size: 8px !important; }
+  .tree-gen-label { font-size: 8px !important; padding: 2px 0 6px !important; }
 }
 
 /* QR Code */
@@ -546,7 +552,7 @@ select { width: 130px; flex-shrink: 0; }
     </button>
     <div class="tree-header-title" id="tree-title"></div>
     <div style="display:flex;gap:8px;flex-shrink:0;">
-      <button class="tree-print-btn" onclick="window.print()">
+      <button class="tree-print-btn" onclick="calcTreeScale(); window.print()">
         <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         Drucken
       </button>
@@ -596,12 +602,22 @@ select { width: 130px; flex-shrink: 0; }
       <div class="settings-row">
         <div>
           <div class="settings-row-label">Generationen</div>
-          <div class="settings-row-sub">Anzahl Vorfahren-Generationen</div>
+          <div class="settings-row-sub" id="gen-sub">Anzahl Vorfahren-Generationen</div>
         </div>
         <div class="seg-control">
           <button class="seg-btn" id="btn-gen3" onclick="setGenerations(3)">3</button>
           <button class="seg-btn" id="btn-gen4" onclick="setGenerations(4)">4</button>
           <button class="seg-btn" id="btn-gen5" onclick="setGenerations(5)">5</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Ansicht Richtung</div>
+          <div class="settings-row-sub" id="dir-sub">Person unten, Vorfahren oben</div>
+        </div>
+        <div class="seg-control">
+          <button class="seg-btn active" id="btn-dir-ancestors" onclick="setTreeDir('ancestors')">Vorfahren</button>
+          <button class="seg-btn" id="btn-dir-descendants" onclick="setTreeDir('descendants')">Nachfahren</button>
         </div>
       </div>
     </div>
@@ -712,6 +728,7 @@ let pendingFileText = '';    // Zwischenspeicher vor Speichern-Entscheidung
 let pendingFileName = '';
 let favorites    = JSON.parse(localStorage.getItem('ahnen-favorites') || '[]');
 let treeGens     = parseInt(localStorage.getItem('ahnen-tree-gens') || '4'); // Default: 4 Generationen
+let treeDir      = localStorage.getItem('ahnen-tree-dir') || 'ancestors'; // 'ancestors' oder 'descendants'
 let treePersonId = null; // aktuell angezeigte Person im Stammbaum
 
 // ── IndexedDB-Hilfsfunktionen ──
@@ -1328,6 +1345,24 @@ function setGenerations(n) {
   document.getElementById('btn-gen3').classList.toggle('active', n === 3);
   document.getElementById('btn-gen4').classList.toggle('active', n === 4);
   document.getElementById('btn-gen5').classList.toggle('active', n === 5);
+  updateGenLabel();
+}
+
+function updateGenLabel() {
+  const sub = document.getElementById('gen-sub');
+  if (sub) sub.textContent = 'Anzahl ' + (treeDir === 'ancestors' ? 'Vorfahren' : 'Nachfahren') + '-Generationen';
+}
+
+function setTreeDir(dir) {
+  treeDir = dir;
+  localStorage.setItem('ahnen-tree-dir', dir);
+  document.getElementById('btn-dir-ancestors').classList.toggle('active',   dir === 'ancestors');
+  document.getElementById('btn-dir-descendants').classList.toggle('active', dir === 'descendants');
+  const sub = document.getElementById('dir-sub');
+  if (sub) sub.textContent = dir === 'ancestors'
+    ? 'Person unten, Vorfahren oben'
+    : 'Person oben, Nachfahren unten';
+  updateGenLabel();
 }
 
 // ── Favoriten ──
@@ -1402,6 +1437,7 @@ function renderFavorites() {
 // ── Stammbaum Download ──
 
 function downloadTreePDF() {
+  calcTreeScale();
   const treeCanvas = document.getElementById('tree-canvas');
   const treeTitle  = document.getElementById('tree-title').textContent;
   const treeHTML   = treeCanvas.outerHTML;
@@ -1442,6 +1478,18 @@ function downloadTreePDF() {
   doc.close();
 }
 
+
+function calcTreeScale() {
+  // A4 quer: ca. 277mm druckbar bei 8mm Rand
+  // Bei 96dpi: 277mm / 25.4 * 96 = ~1047px
+  // Etwas konservativer: 980px nutzbare Breite
+  const printW   = 980;
+  const canvas   = document.getElementById('tree-canvas');
+  const canvasW  = canvas.scrollWidth;
+  const scale    = canvasW > printW ? (printW / canvasW) : 1;
+  canvas.style.setProperty('--tree-print-scale', scale.toFixed(4));
+}
+
 // ── Stammbaum ──
 
 function showTree() {
@@ -1477,12 +1525,94 @@ function getParents(personId) {
   ];
 }
 
+function getChildren(personId) {
+  // Gibt alle Kinder einer Person zurück (aus allen Ehen)
+  const p = db.persons[personId];
+  if (!p) return [];
+  const children = [];
+  for (const famId of p.fams) {
+    const fam = db.families[famId];
+    if (!fam) continue;
+    for (const cId of fam.chil) {
+      if (db.persons[cId]) children.push(db.persons[cId]);
+    }
+  }
+  return children;
+}
+
 function renderTree(rootId) {
   const canvas = document.getElementById('tree-canvas');
   canvas.innerHTML = '';
+  if (treeDir === 'ancestors') {
+    renderAncestors(canvas, rootId);
+  } else {
+    renderDescendants(canvas, rootId);
+  }
+}
 
-  // Baum aufbauen: gen[0] = Wurzel, gen[1] = Eltern, ...
+// ── SVG-Hilfsfunktionen ──
+
+function makeSVG(w, h) {
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg   = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('width',   w);
+  svg.setAttribute('height',  h);
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+  return svg;
+}
+
+function svgLine(svg, x1, y1, x2, y2) {
+  const svgNS  = 'http://www.w3.org/2000/svg';
+  const STROKE = 'rgba(139,105,20,0.5)';
+  const el     = document.createElementNS(svgNS, 'line');
+  el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+  el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+  el.setAttribute('stroke', STROKE);
+  el.setAttribute('stroke-width', '1.5');
+  el.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(el);
+}
+
+// ── Karte erstellen (gemeinsam für beide Modi) ──
+
+function makeCard(id, isRoot, rootId) {
+  const card = document.createElement('div');
+
+  if (!id) {
+    // Unsichtbarer Platzhalter — kein ? mehr
+    card.className        = 'tree-card empty';
+    card.style.visibility = 'hidden';
+    return card;
+  }
+
+  const p     = db.persons[id];
+  const cls   = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
+  const ini   = initials(p);
+  const bYear = p.birt && p.birt.date ? p.birt.date.match(/\d{4}/) : null;
+  const dYear = p.deat && p.deat.date ? p.deat.date.match(/\d{4}/) : null;
+  const dates = [bYear ? '* ' + bYear[0] : '', dYear ? '\u2020 ' + dYear[0] : '']
+    .filter(Boolean).join('  ');
+
+  card.className = 'tree-card' + (isRoot ? ' root' : '');
+  card.innerHTML =
+    '<div class="tree-avatar ' + cls + '">' + esc(ini) + '</div>' +
+    '<div class="tree-name">' + esc(p.name) + '</div>' +
+    (dates ? '<div class="tree-dates">' + esc(dates) + '</div>' : '');
+
+  card.onclick = () => {
+    document.getElementById('view-tree').style.display   = 'none';
+    document.getElementById('view-detail').style.display = 'none';
+    showDetail(id);
+    treePersonId = rootId;
+  };
+  return card;
+}
+
+// ── Vorfahren-Baum ──
+
+function renderAncestors(canvas, rootId) {
   const gens = [[rootId]];
+
   for (let g = 1; g < treeGens; g++) {
     const prevGen = gens[g - 1];
     const thisGen = [];
@@ -1498,119 +1628,181 @@ function renderTree(rootId) {
     gens.push(thisGen);
   }
 
-  const genLabels = ['Person', 'Eltern', 'Großeltern', 'Urgroßeltern', 'Ururgroßeltern'];
-  const NODE_W_BASE = 120; // Breite eines Knotens in der ältesten Generation
-  const ROW_H       = 32;  // Höhe des Verbindungsstreifens
-  const STROKE    = 'rgba(139,105,20,0.5)';
+  const genLabels   = ['Person', 'Eltern', 'Gro\u00dfeltern', 'Urgro\u00dfeltern', 'Ururgro\u00dfeltern'];
+  const NODE_W_BASE = 120;
+  const ROW_H       = 32;
 
-  // Von oben (älteste) nach unten (Person) rendern
   for (let g = gens.length - 1; g >= 0; g--) {
     const ids   = gens[g];
     const label = genLabels[g] || ('Generation ' + g);
 
-    // Generations-Label
     const labelEl = document.createElement('div');
     labelEl.className   = 'tree-gen-label';
     labelEl.textContent = label;
     canvas.appendChild(labelEl);
 
-    // Zeile der Knoten
     const row = document.createElement('div');
     row.className = 'tree-gen';
 
     for (const id of ids) {
-      // Knotenbreite: älteste Generation (g=treeGens-1) = NODE_W_BASE,
-      // jede Generation nach unten verdoppelt sich die Breite.
       const nodeW = NODE_W_BASE * Math.pow(2, treeGens - 1 - g);
       const node  = document.createElement('div');
       node.className   = 'tree-node';
       node.style.width = nodeW + 'px';
-
-      const card = document.createElement('div');
-      if (!id) {
-        card.className = 'tree-card empty';
-        card.innerHTML =
-          '<div class="tree-avatar u">?</div>' +
-          '<div class="tree-name" style="color:var(--sepia-light);">unbekannt</div>';
-      } else {
-        const p     = db.persons[id];
-        const cls   = p.sex === 'F' ? 'f' : p.sex === 'M' ? '' : 'u';
-        const ini   = initials(p);
-        const bYear = p.birt && p.birt.date ? p.birt.date.match(/\d{4}/) : null;
-        const dYear = p.deat && p.deat.date ? p.deat.date.match(/\d{4}/) : null;
-        const dates = [bYear ? '* ' + bYear[0] : '', dYear ? '† ' + dYear[0] : '']
-          .filter(Boolean).join('  ');
-
-        card.className = 'tree-card' + (g === 0 ? ' root' : '');
-        card.innerHTML =
-          '<div class="tree-avatar ' + cls + '">' + esc(ini) + '</div>' +
-          '<div class="tree-name">' + esc(p.name) + '</div>' +
-          (dates ? '<div class="tree-dates">' + esc(dates) + '</div>' : '');
-
-        card.onclick = () => {
-          document.getElementById('view-tree').style.display   = 'none';
-          document.getElementById('view-detail').style.display = 'none';
-          showDetail(id);
-          treePersonId = rootId;
-        };
-      }
-      node.appendChild(card);
+      node.appendChild(makeCard(id, g === 0, rootId));
       row.appendChild(node);
     }
-
     canvas.appendChild(row);
 
-    // Nach jeder Zeile außer der untersten (Person) einen SVG-Verbindungsstreifen einfügen
-    // Dieser Streifen verbindet die aktuelle Zeile (Eltern) mit der nächsten (Kinder = g-1)
     if (g > 0) {
-      const childIds  = gens[g - 1];   // Kinder (nächste Zeile)
-      const parentIds = ids;             // Eltern (aktuelle Zeile)
-
-      // Gesamtbreite des Streifens = Anzahl Eltern × NODE_W
-      // Knotenbreite der Eltern-Zeile (g) und Kind-Zeile (g-1)
       const parentNodeW = NODE_W_BASE * Math.pow(2, treeGens - 1 - g);
-      // SVG-Streifen so breit wie alle Eltern zusammen
-      const totalW = parentIds.length * parentNodeW;
+      const totalW      = ids.length * parentNodeW;
+      const svg         = makeSVG(totalW, ROW_H);
+      const midY        = ROW_H / 2;
+      const childIds    = gens[g - 1];
 
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const svg   = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('width',   totalW);
-      svg.setAttribute('height',  ROW_H);
-      svg.setAttribute('viewBox', '0 0 ' + totalW + ' ' + ROW_H);
-
-      function line(x1, y1, x2, y2) {
-        const el = document.createElementNS(svgNS, 'line');
-        el.setAttribute('x1', x1); el.setAttribute('y1', y1);
-        el.setAttribute('x2', x2); el.setAttribute('y2', y2);
-        el.setAttribute('stroke', STROKE);
-        el.setAttribute('stroke-width', '1.5');
-        el.setAttribute('stroke-linecap', 'round');
-        svg.appendChild(el);
-      }
-
-      const midY = ROW_H / 2;
-
-      // Für jedes Kind (ci): Verbindung zu linkem (2*ci) und rechtem (2*ci+1) Elternteil
       for (let ci = 0; ci < childIds.length; ci++) {
-        // X-Mitten der Elternteile — berechnet mit parentNodeW
         const leftX  = ci * 2       * parentNodeW + parentNodeW / 2;
         const rightX = (ci * 2 + 1) * parentNodeW + parentNodeW / 2;
-
-        // X-Mitte des Kindes = geometrische Mitte zwischen beiden Elternteilen
         const childX = (leftX + rightX) / 2;
-
-        // Senkrecht: Oberkante → midY, von jedem Elternteil
-        line(leftX,  0,    leftX,  midY);
-        line(rightX, 0,    rightX, midY);
-        // Waagerecht auf midY
-        line(leftX,  midY, rightX, midY);
-        // Senkrecht: midY → Unterkante, zum Kind
-        line(childX, midY, childX, ROW_H);
+        svgLine(svg, leftX,  0,    leftX,  midY);
+        svgLine(svg, rightX, 0,    rightX, midY);
+        svgLine(svg, leftX,  midY, rightX, midY);
+        svgLine(svg, childX, midY, childX, ROW_H);
       }
 
       const connRow = document.createElement('div');
-      connRow.className  = 'tree-connector-row';
-      connRow.style.width = totalW + 'px'; // = parentIds.length * parentNodeW
+      connRow.className   = 'tree-connector-row';
+      connRow.style.width = totalW + 'px';
+      connRow.appendChild(svg);
+      canvas.appendChild(connRow);
+    }
+  }
+}
+
+// ── Nachfahren-Baum (rekursiv) ──
+
+function renderDescendants(canvas, rootId) {
+  const NODE_W    = 120;
+  const ROW_H     = 32;
+  const genLabels = ['Person', 'Kinder', 'Enkelkinder', 'Urenkelkinder', 'Ururenkl.'];
+
+  // Schritt 1: Baum als Datenstruktur aufbauen
+  function buildNode(id, depth) {
+    const node = { id, children: [] };
+    if (depth < treeGens - 1 && id) {
+      for (const k of getChildren(id)) {
+        node.children.push(buildNode(k.id, depth + 1));
+      }
+    }
+    return node;
+  }
+
+  const root = buildNode(rootId, 0);
+
+  // Schritt 2: Breite berechnen — Blatt = NODE_W, Elter = Summe Kinder
+  function calcWidth(node) {
+    if (node.children.length === 0) {
+      node.w = NODE_W;
+    } else {
+      node.children.forEach(calcWidth);
+      node.w = node.children.reduce((s, c) => s + c.w, 0);
+    }
+  }
+  calcWidth(root);
+
+  // Schritt 3: X-Position — Mitte des zugewiesenen Slots
+  function calcX(node, startX) {
+    node.x = startX + node.w / 2;
+    let cx = startX;
+    for (const child of node.children) {
+      calcX(child, cx);
+      cx += child.w;
+    }
+  }
+  calcX(root, 0);
+
+  // Schritt 4: Generationsweise sammeln
+  const levels = [];
+  function collectLevels(node, depth) {
+    if (!levels[depth]) levels[depth] = [];
+    levels[depth].push(node);
+    node.children.forEach(c => collectLevels(c, depth + 1));
+  }
+  collectLevels(root, 0);
+
+  const totalW = root.w;
+
+  for (let depth = 0; depth < levels.length; depth++) {
+    const label = genLabels[depth] || ('Generation ' + depth);
+    const nodes = levels[depth];
+
+    // Label
+    const labelEl = document.createElement('div');
+    labelEl.className   = 'tree-gen-label';
+    labelEl.textContent = label;
+    labelEl.style.width = totalW + 'px';
+    canvas.appendChild(labelEl);
+
+    // Zeile mit absolut positionierten Knoten
+    const row = document.createElement('div');
+    row.className      = 'tree-gen';
+    row.style.width    = totalW + 'px';
+    row.style.position = 'relative';
+    row.style.minHeight = '80px'; // Platzhalterhöhe bis rAF greift
+
+    for (const node of nodes) {
+      const wrap = document.createElement('div');
+      wrap.className      = 'tree-node';
+      wrap.style.width    = node.w + 'px';
+      wrap.style.position = 'absolute';
+      wrap.style.left     = (node.x - node.w / 2) + 'px';
+      wrap.style.top      = '0';
+      wrap.appendChild(makeCard(node.id, depth === 0, rootId));
+      row.appendChild(wrap);
+    }
+    canvas.appendChild(row);
+
+    // Zeilenhöhe nach Render anpassen
+    requestAnimationFrame(() => {
+      let h = 0;
+      row.querySelectorAll('.tree-card').forEach(c => {
+        if (c.offsetHeight > h) h = c.offsetHeight;
+      });
+      if (h > 0) row.style.minHeight = h + 'px';
+    });
+
+    // SVG-Verbindungsstreifen zur nächsten Generation
+    if (depth < levels.length - 1) {
+      const svg  = makeSVG(totalW, ROW_H);
+      const midY = ROW_H / 2;
+
+      for (const node of nodes) {
+        if (node.children.length === 0) continue;
+
+        const parentX = node.x;
+        const childXs = node.children.map(c => c.x);
+        const leftX   = childXs[0];
+        const rightX  = childXs[childXs.length - 1];
+
+        // Senkrecht vom Elternteil nach unten bis midY
+        svgLine(svg, parentX, 0, parentX, midY);
+
+        if (childXs.length === 1) {
+          // Einzelkind: direkte Linie
+          svgLine(svg, childXs[0], midY, childXs[0], ROW_H);
+        } else {
+          // Mehrere Kinder: waagerechte Linie + senkrecht zu jedem Kind
+          svgLine(svg, leftX, midY, rightX, midY);
+          for (const cx of childXs) {
+            svgLine(svg, cx, midY, cx, ROW_H);
+          }
+        }
+      }
+
+      const connRow = document.createElement('div');
+      connRow.className   = 'tree-connector-row';
+      connRow.style.width = totalW + 'px';
       connRow.appendChild(svg);
       canvas.appendChild(connRow);
     }
@@ -1703,6 +1895,7 @@ async function init() {
   setMode(appMode);
   document.getElementById('version-label').textContent = APP_VERSION;
   setGenerations(treeGens);
+  setTreeDir(treeDir);
   drawQR(document.getElementById('qr-canvas'), APP_URL);
 
   try {
